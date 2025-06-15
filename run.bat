@@ -1,4 +1,4 @@
 
 python3 backend/app.py
-cd here/forntend
+cd ../forntend
 npm run serve
