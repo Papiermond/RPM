@@ -19,12 +19,18 @@ This is template project for a school project.
         python3 -m venv Venv
 
         ./Venv/bin/activate
+        alertentivly:
+          source .Venv/bin/activate
 
         pip install --upgrade pip
 
         pip install -r requirements.txt
 
+  #npm could need Sudo or admin privlages to run correctly
+
         npm install -g @vue/cli
+
+        npm install -save-dev fontend/package.json
 
 ## 3. Run the project
 
