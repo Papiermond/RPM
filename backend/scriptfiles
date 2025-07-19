@@ -1,0 +1,86 @@
+SELECT COUNT(*) AS jünger_als_10_jahre
+FROM auftrag
+WHERE kunden_Nr = 353
+AND datum >= DATE_SUB(CURDATE(), INTERVAL 10 YEAR);
+###
+SELECT COUNT(*) AS anzahl_auftraege
+FROM Auftrag
+WHERE kunden_Nr = 353;
+####
+INSERT INTO auftrag (Kunden_Nr, Datum, Gesamtpreis)
+VALUES (353, '2024-10-09', 20.40);
+
+INSERT INTO ist_teil_von (Auftrag_Nr, Produkt_Nr, Produkt_Anzahl, Produktgröße)
+VALUES 
+(10, 98, 1, '10 kg'),
+(10, 138, 10, 'Schale');
+####
+SELECT ROUND(SUM(gesamtpreis), 2) AS gesamtumsatz
+FROM Auftrag
+WHERE kunden_Nr = 123;
+####
+DELETE FROM ist_teil_von
+WHERE auftrag_Nr = 7;
+
+DELETE FROM adresse
+WHERE Adress_Nr = 123;
+
+DELETE FROM auftrag
+WHERE Kunden_Nr = 123;
+
+DELETE FROM kunde
+WHERE kunden_Nr = 123;
+#####
+SELECT CONCAT(k.vorname, ' ', k.nachname) AS name
+FROM Kunde k
+JOIN Auftrag a ON k.kunden_Nr = a.kunden_Nr
+WHERE a.auftrag_Nr = 9;
+#####
+SELECT Kunden_Nr FROM kunde WHERE Vorname = "Karam" And Nachname = "Erol"
+#####
+UPDATE kunde
+SET
+Vorname = 'ANOYM',
+Nachname = 'ANOYN'
+WHERE Kunden_Nr = 1
+#####
+SELECT Ort, COUNT(*) AS anzahl
+FROM adresse
+GROUP BY Ort
+ORDER BY anzahl DESC
+LIMIT 1;
+######
+SELECT p.Produktname, SUM(ap.produkt_Anzahl) AS gesamtmenge
+FROM Produkt p
+JOIN ist_teil_von ap ON p.produkt_Nr = ap.produkt_Nr
+JOIN Auftrag a ON ap.auftrag_Nr = a.auftrag_Nr
+WHERE MONTH(a.datum) = 6
+  AND YEAR(a.datum) = 2024
+GROUP BY p.Produktname;
+######
+INSERT INTO produkt (Produktname) 
+VALUES
+('Mairüben'),
+('Pak Choi');
+#####
+SELECT COUNT(*) FROM adresse WHERE Stra_e = "Wiesenweg" AND Ort = "Buxtehude"
+######
+SELECT p.produktname
+FROM Produkt p
+LEFT JOIN ist_teil_von ap ON p.produkt_Nr = ap.produkt_Nr
+WHERE ap.produkt_Nr IS NULL;
+#####
+SELECT SUM(Produkt_Anzahl) AS anzahl_bestellt
+FROM ist_teil_von
+WHERE produkt_Nr = 6;
+#####
+SELECT COUNT(*) AS gemeinsame_bestellungen
+FROM (
+  SELECT auftrag_Nr
+  FROM ist_teil_von
+  WHERE produkt_Nr IN (48, 141)
+  GROUP BY auftrag_Nr
+  HAVING COUNT(DISTINCT produkt_Nr) = 2
+) AS gemeinsame;
+
+

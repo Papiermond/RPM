@@ -1,16 +1,19 @@
 <template>
-  <div>
-    <h1>Kundendaten</h1>
-    <kunde />
+  <div id="app">
+    <router-view />
   </div>
 </template>
 
 <script>
-import Kunde from './components/kunde.vue';
-
-export default {
-  components: {
-    Kunde
-  }
+export default{
+  name: 'App'
 }
+
 </script>
+<style>
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 1rem;
+}
+</style>
