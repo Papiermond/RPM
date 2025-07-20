@@ -4,6 +4,7 @@
     <button @click="$router.push('/kunden')">Kunden</button>
     <button @click="$router.push('/produkte')">Produkte</button>
     <button @click="$router.push('/auftrag')">Auftrag</button>
+    <button @click="$router.push('/DSGVO')">DSGVO</button>
   </div>
 </template>
 

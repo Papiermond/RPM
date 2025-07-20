@@ -238,6 +238,156 @@ def produkte_im_monat():
 
     return jsonify([dict(row) for row in result])
 
+@app.route('/api/unbestellte_produkte', methods=['GET'])
+def unbestellte_produkte():
+    result = db.session.execute(db.text("""
+        SELECT p.produktname
+        FROM Produkt p
+        LEFT JOIN ist_teil_von ap ON p.produkt_Nr = ap.produkt_Nr
+        WHERE ap.produkt_Nr IS NULL;
+    """)).scalars().all()
+
+    return jsonify([{"produktname": name} for name in result])
+
+@app.route('/api/produkte_together', methods=['POST'])
+def produkte_together():
+    data = request.get_json()
+    p1 = data.get('produktnameA')
+    p2 = data.get('produktnameB')
+
+    if not p1 or not p2:
+        return jsonify({"error": "Beide Produktnamen erforderlich"}), 400
+
+    result = db.session.execute(db.text("""
+        SELECT COUNT(*) AS gemeinsame_bestellungen
+        FROM (
+            SELECT i.auftrag_Nr
+            FROM ist_teil_von i
+            JOIN produkt p ON i.produkt_Nr = p.produkt_Nr
+            WHERE p.Produktname IN (:p1, :p2)
+            GROUP BY i.auftrag_Nr
+            HAVING COUNT(DISTINCT p.Produktname) = 2
+        ) AS gemeinsame
+    """), {"p1": p1, "p2": p2}).scalar()
+
+    return jsonify({"anzahl": result})
+
+@app.route('/api/auftrag_hinzufuegen', methods=['POST'])
+def auftrag_hinzufuegen():
+    data = request.get_json()
+    kundenNr = data.get('kundenNr')
+    datum = data.get('datum')
+    gesamtpreis = data.get('gesamtpreis')
+    produkte = data.get('produkte', [])
+
+    if not all([kundenNr, datum, gesamtpreis, produkte]):
+        return jsonify({"message": "Alle Felder erforderlich"}), 400
+
+    result = db.session.execute(db.text("""
+        INSERT INTO auftrag (kunden_Nr, Datum, Gesamtpreis)
+        VALUES (:kundenNr, :datum, :gesamtpreis)
+    """), {"kundenNr": kundenNr, "datum": datum, "gesamtpreis": gesamtpreis})
+
+    auftrag_id = db.session.execute(db.text("""SELECT LAST_INSERT_ID()""")).scalar()
+
+    for p in produkte:
+        db.session.execute(db.text("""
+            INSERT INTO ist_teil_von (auftrag_Nr, produkt_Nr, Produkt_Anzahl, Produktgröße)
+            VALUES (:auftrag, :produkt, :anzahl, :groesse)
+        """), {"auftrag": auftrag_id, "produkt": p["produktNr"], "anzahl": p["menge"], "groesse": p["groesse"]})
+
+    db.session.commit()
+    return jsonify({"message": "Bestellung erfolgreich hinzugefügt"}), 201
+
+@app.route('/api/produkt_add', methods=['POST'])
+def produkt_add():
+    data = request.get_json()
+    name = data.get('name')
+
+    if not name:
+        return jsonify({"message": "Produktname erforderlich"}), 400
+
+    db.session.execute(db.text("""
+        INSERT INTO produkt (Produktname)
+        VALUES (:name)
+    """), {"name": name})
+
+    db.session.commit()
+    return jsonify({"message": "Produkt erfolgreich hinzugefügt"}), 201
+
+# Information
+@app.route('/api/dsgvo_information', methods=['POST'])
+def dsgvo_information():
+    data = request.get_json()
+    vorname = data.get('vorname')
+    nachname = data.get('nachname')
+
+    result = db.session.execute(db.text("""
+        SELECT k.Kunden_Nr, k.Vorname, k.Nachname, a.Stra_e, a.Haus_Nr, a.PLZ, a.Ort
+        FROM kunde k
+        JOIN adresse a ON k.Adress_Nr = a.Adress_Nr
+        WHERE k.Vorname = :vorname AND k.Nachname = :nachname
+    """), {'vorname': vorname, 'nachname': nachname}).mappings().fetchone()
+
+    if result:
+        return jsonify(dict(result))
+    else:
+        return jsonify({"message": "Kunde nicht gefunden"}), 404
+
+# delet
+@app.route('/api/dsgvo_delet', methods=['POST'])
+def dsgvo_delet():
+    data = request.get_json()
+    vorname = data.get('vorname')
+    nachname = data.get('nachname')
+
+    # 1. Search for customers by first and last name
+    kunde = db.session.execute(db.text("""
+        SELECT * FROM kunde WHERE Vorname = :vor AND Nachname = :nach
+    """), {'vor': vorname, 'nach': nachname}).mappings().fetchone()
+
+    if not kunde:
+        return jsonify({"message": "Kunde nicht gefunden"}), 404
+
+    kundenNr = kunde['Kunden_Nr']
+    adressNr = kunde['Adress_Nr']
+ 
+    # 2. Check if orders are < 10 years old
+    bestellungen = db.session.execute(db.text("""
+        SELECT COUNT(*) AS anz FROM auftrag
+        WHERE kunden_Nr = :id AND Datum >= DATE_SUB(CURDATE(), INTERVAL 10 YEAR)
+    """), {'id': kundenNr}).mappings().fetchone()
+
+    if bestellungen['anz'] > 0:
+        db.session.execute(db.text("""
+            UPDATE kunde SET Vorname = 'Anonymisiert', Nachname = 'Anonymisiert'
+            WHERE Kunden_Nr = :id
+        """), {'id': kundenNr})
+        db.session.commit()
+        return jsonify({"message": "Kunde anonymisiert wegen aktiver Aufträge"}), 200
+
+    # 3. Check address
+    adress_verwendung = db.session.execute(db.text("""
+        SELECT COUNT(*) AS anz FROM kunde
+        WHERE Adress_Nr = :adr AND Kunden_Nr != :id
+    """), {'adr': adressNr, 'id': kundenNr}).mappings().fetchone()
+
+    # 4. Delete orders + customer
+    db.session.execute(db.text("""
+        DELETE FROM ist_teil_von WHERE auftrag_Nr IN (
+            SELECT Auftrag_Nr FROM auftrag WHERE kunden_Nr = :id
+        )
+    """), {'id': kundenNr})
+    db.session.execute(db.text("DELETE FROM auftrag WHERE kunden_Nr = :id"), {'id': kundenNr})
+    db.session.execute(db.text("DELETE FROM kunde WHERE kunden_Nr = :id"), {'id': kundenNr})
+ 
+    # 5. Delete address if no longer used
+    if adress_verwendung['anz'] == 0:
+        db.session.execute(db.text("DELETE FROM adresse WHERE Adress_Nr = :adr"), {'adr': adressNr})
+
+    db.session.commit()
+    return jsonify({"message": "Kunde und zugehörige Daten gelöscht"}), 200
+
 if __name__ == '__main__':
     with app.app_context():
 

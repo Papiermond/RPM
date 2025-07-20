@@ -2,6 +2,22 @@
   <div>
     <button @click="$router.push('/')" class="back-button">Zurück</button>
     <h2>Produkte</h2>
+
+    <button @click="showProduktModal = true" class="btn">Neues Produkt hinzufügen</button>
+
+    <div v-if="showProduktModal" class="modal-backdrop">
+      <div class="modal">
+        <h3>Produkt hinzufügen</h3>
+
+        <form @submit.prevent="produktHinzufuegen">
+          <label>Produktname:</label>
+          <input v-model="neuesProdukt.name" placeholder="Produktname" required />
+
+          <button type="submit" class="btn">Hinzufügen</button>
+          <button @click="showProduktModal = false" type="button" class="btn cancel">Abbrechen</button>
+        </form>
+      </div>
+    </div>
     <table>
         <thead>
             <tr>
@@ -24,7 +40,11 @@ export default {
   name: 'ProduktListe',
   data() {
     return {
-      produkt: []
+      produkt: [],
+      showProduktModal: false,
+      neuesProdukt: {
+      name: ''
+    }
     }
   },
   mounted() {
@@ -36,7 +56,28 @@ export default {
       .catch(error => {
         console.error('Fehler beim Laden der Produktdaten:', error)
       });
+  },
+  methods: {
+  async produktHinzufuegen() {
+    const res = await fetch('http://localhost:5000/api/produkt_add', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: this.neuesProdukt.name })
+    });
+
+    const data = await res.json();
+    if (res.ok) {
+      alert(data.message || 'Produkt erfolgreich hinzugefügt');
+      this.showProduktModal = false;
+      this.neuesProdukt.name = '';
+
+      const resProdukte = await fetch('http://localhost:5000/api/produkte');
+      this.produkte = await resProdukte.json();
+    } else {
+      alert(data.message || 'Fehler beim Hinzufügen');
+    }
   }
+}
 }
 </script>
 
