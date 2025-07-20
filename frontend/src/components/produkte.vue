@@ -1,6 +1,6 @@
 <template>
   <div>
-    <button @click="$router.push('/')" class="zurueck-button">Zurück</button>
+    <button @click="$router.push('/')" class="back-button">Zurück</button>
     <h2>Produkte</h2>
     <table>
         <thead>
@@ -41,7 +41,7 @@ export default {
 </script>
 
 <style scoped>
-.zurueck-button {
+.back-button {
   padding: 0.5rem 1rem;
   font-size: 1rem;
   background-color: #42b983;
@@ -52,7 +52,7 @@ export default {
   margin-bottom: 1rem;
 }
 
-.zurueck-button:hover {
+.back-button:hover {
   background-color: #369c6e;
 }
 

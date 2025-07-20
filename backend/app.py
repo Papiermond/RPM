@@ -76,12 +76,16 @@ def get_auftraege():
     sql = text("""
         SELECT
             a.Auftrag_Nr,
-            a.kunden_Nr,
+            k.vorname,
+            k.nachname,
             a.Datum,
             a.Gesamtpreis,
             p.Produkt_Nr,
-            p.Produktname
+            p.Produktname,
+            i.Produkt_Anzahl,
+            i.Produktgröße
         FROM auftrag a
+        JOIN kunde k ON a.kunden_Nr = k.Kunden_Nr
         LEFT JOIN ist_teil_von i ON a.Auftrag_Nr = i.Auftrag_Nr
         LEFT JOIN produkt p ON i.produkt_Nr = p.produkt_Nr
         ORDER BY a.Auftrag_Nr
@@ -94,7 +98,8 @@ def get_auftraege():
         if nr not in auftraege:
             auftraege[nr] = {
                 "Auftrag_Nr": nr,
-                "kunden_Nr": row["kunden_Nr"],
+                "vorname": row["vorname"],
+                "nachname": row["nachname"],
                 "Datum": row["Datum"].strftime("%Y-%m-%d"),
                 "Gesamtpreis": row["Gesamtpreis"],
                 "produkte": []
@@ -102,7 +107,9 @@ def get_auftraege():
         if row["Produkt_Nr"]:
             auftraege[nr]["produkte"].append({
                 "Produkt_Nr": row["Produkt_Nr"],
-                "Produktname": row["Produktname"]
+                "Produktname": row["Produktname"],
+                "Produkt_Anzahl": row["Produkt_Anzahl"],
+                "Produktgröße": row["Produktgröße"]
             })
             
     return jsonify(list(auftraege.values()))
@@ -160,6 +167,76 @@ def ort_max():
 
     return jsonify({"ort": result[0], "anzahl": result[1]})
 
+@app.route('/api/anzahl_auftrag', methods=['POST'])
+def anzahl_auftrag():
+    data = request.get_json()
+    vorname = data.get('vorname')
+    nachname = data.get('nachname')
+
+    if not vorname or not nachname:
+        return jsonify({"error": "Vorname und Nachname erforderlich"}), 400
+    
+    result = db.session.execute(db.text("""
+        SELECT COUNt(a.Auftrag_Nr) AS anzahl,
+                COALESCE(SUM(a.Gesamtpreis), 0) AS umsatz
+        FROM auftrag a
+        JOIN kunde k ON a.kunden_Nr = k.Kunden_Nr
+        WHERE k.vorname = :vorname AND k.nachname = :nachname
+    """), {"vorname": vorname, "nachname": nachname}).mappings().first()
+
+    return jsonify({"anzahl": result["anzahl"], "umsatz": result["umsatz"]})
+
+@app.route('/api/get_kunde_by_auftrag', methods=['POST'])
+def get_kunde_by_auftrag():
+    data = request.get_json()
+    Auftrag_Nr = data.get('Auftrag_Nr')
+
+    result = db.session.execute(db.text("""
+        SELECT k.vorname, k.nachname
+        FROM auftrag a
+        LEFT JOIN kunde k ON a.kunden_Nr = k.Kunden_Nr
+        WHERE a.Auftrag_Nr = :Auftrag_Nr
+    """), {"Auftrag_Nr": Auftrag_Nr}).fetchone()
+
+    if result is not None:
+        return jsonify({"vorname": result[0], "nachname": result[1]})
+    else:
+        return jsonify({"message": "Kein Kunde zu dieser Auftragsnummer gefunden"}), 404
+
+@app.route('/api/produkt_order', methods=['POST'])
+def produkt_order():
+    data = request.get_json()
+    produktname = data.get('produktname')
+    print(produktname)
+    if not produktname:
+        return jsonify({"error": "Produktname erforderlich"}), 400
+
+    result = db.session.execute(db.text("""
+        SELECT COUNT(*) FROM ist_teil_von i
+        JOIN produkt p ON i.produkt_Nr = p.produkt_Nr
+        WHERE p.Produktname = :produktname
+    """), {"produktname": produktname}).scalar()
+
+    return jsonify({"anzahl": result})
+
+@app.route('/api/produkte_monat', methods=['POST'])
+def produkte_im_monat():
+    data = request.get_json()
+    monat = data.get('monat')
+
+    if not monat:
+        return jsonify({"error": "Monat erforderlich"}), 400
+
+    result = db.session.execute(db.text("""
+        SELECT p.Produktname, SUM(i.produkt_Anzahl) AS anzahl
+        FROM Produkt p
+        JOIN ist_teil_von i ON p.produkt_Nr = i.produkt_Nr
+        JOIN Auftrag a ON i.auftrag_Nr = a.auftrag_Nr
+        WHERE DATE_FORMAT(a.Datum, '%Y-%m') = :monat
+        GROUP BY p.Produktname
+    """), {"monat": monat}).mappings().all()
+
+    return jsonify([dict(row) for row in result])
 
 if __name__ == '__main__':
     with app.app_context():
