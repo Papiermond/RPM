@@ -1,7 +1,7 @@
 <template>
   <div>
 
-    <button @click="$router.push('/')" class="back-button">Zurück</button>
+    <button @click="$router.push('/')" class="back-button">Startseite</button>
     <h2>Kunden Daten</h2>
         <form @submit.prevent="get_KundenNr" class="form-row">
             <input v-model="vorname" placeholder="Vorname" class="input" />

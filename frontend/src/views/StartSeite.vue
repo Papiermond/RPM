@@ -1,6 +1,6 @@
 <template>
-  <div>
-    <h1>Startseite</h1>
+  <h1>Startseite</h1>
+  <div class="button-container">
     <button @click="$router.push('/kunden')">Kunden</button>
     <button @click="$router.push('/produkte')">Produkte</button>
     <button @click="$router.push('/auftrag')">Auftrag</button>
@@ -9,6 +9,13 @@
 </template>
 
 <style>
+.button-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+}
+
 button {
   padding: 0.5rem 1rem;
   font-size: 1rem;
@@ -17,9 +24,9 @@ button {
   border: none;
   border-radius: 5px;
   cursor: pointer;
-  margin-bottom: 1rem;
 }
 
 button:hover {
   background-color: #369c6e;
-}</style>
+}
+</style>

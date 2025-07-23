@@ -1,7 +1,9 @@
 <template>
   <div>
-    <button @click="$router.push('/')" class="back-button">Zurück</button>
+    <button @click="$router.push('/')" class="back-button">Startseite</button>
     <h2>Aufträge</h2>
+
+    <h3>Wie viel Aufträge ein Kunde hat und was der Gesamtpreis ist</h3>
     <form @submit.prevent="auftrag_anzahl">
         <input v-model="vorname" placeholder="Vorname" class="input" />
         <input v-model="nachname" placeholder="Nachname" class="input" />
@@ -12,6 +14,7 @@
         <strong>Anzahl Aufträge:</strong> {{ parseFloat(gesamtumsatz).toFixed(2) }} €
     </div>
 
+    <h3>Welcher Kunde</h3>
     <form @submit.prevent="getKundeByAuftrag">
         <input v-model="Auftrag_Nr" placeholder="Auftrag Nr." class="input" />
         <button type="submit" class="btn"> Submit </button>
@@ -23,6 +26,7 @@
         {{ fehlermeldung }}
     </div>
 
+    <h3>Wie offt ein Produkt bestellt wurde</h3>
     <form @submit.prevent="getProduktOrder">
       <input v-model="produktname" placeholder="Produktname" class="input" />
       <button type="submit" class="btn">Submit</button>
@@ -31,6 +35,7 @@
       <strong>Bestellungen:</strong> {{ anzahlProdukt1 }}
     </div>
 
+    <h3>Welche Produkte im Monat bestellt wurden</h3>
     <form @submit.prevent="getProduktMonat">
       <input v-model="monat" type="month" class="input" />
       <button type="submit" class="btn">Submit</button>
@@ -41,6 +46,7 @@
       </ul>
     </div>
 
+    <h3>Was nicht bestellt wurde</h3>
     <form @submit.prevent="getunbestellt">
       <button type="submit" class="btn">Was nicht Bestellt wurde</button>
     </form>
@@ -50,6 +56,7 @@
       </ul>
     </div>
 
+    <h3>Welche Produkte zusammen bestellt wurden</h3>
     <form @submit.prevent="gettogether">
       <input v-model="produktnameA" placeholder="Produkt A" class="input" />
       <input v-model="produktnameB" placeholder="Produkt B" class="input" />
@@ -192,7 +199,6 @@ export default {
       },
       produktMengen: {},
       neueMenge: 1,
-      neuesProduktId: '',
       produktAuswahl: [],
       neueGroesse: '',
       groessenListe: ['1 kg','10 kg','3 kg','100 g','500 g','250 g','Schale','Stück']

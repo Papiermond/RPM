@@ -1,6 +1,6 @@
 <template>
   <div>
-    <button @click="$router.push('/')" class="back-button">Zurück</button>
+    <button @click="$router.push('/')" class="back-button">Startseite</button>
     <h2>Produkte</h2>
 
     <button @click="showProduktModal = true" class="btn">Neues Produkt hinzufügen</button>

@@ -1,9 +1,10 @@
 <template>
-    <button @click="$router.push('/')" class="back-button">Zurück</button>
+    <button @click="$router.push('/')" class="back-button">Startseite</button>
   <div>
     <h2>DSGVO-Anfragen</h2>
 
     <!-- Information -->
+    <h3>Infromatioen über den Kunden</h3>
     <form @submit.prevent="holeKundendaten">
       <input v-model="dsGvoName" placeholder="Vorname Nachname" class="input" />
       <button type="submit" class="btn">Auskunft anfordern</button>
@@ -18,6 +19,7 @@
     </div>
 
     <!-- Delet/ANOYM -->
+    <h3>Kunde löschen oder Anonymisiert</h3>
     <form @submit.prevent="loescheKundendaten">
       <input v-model="dsGvoName" placeholder="Vorname Nachname" class="input" />
       <button type="submit" class="btn cancel">Daten löschen/ Anonymisiert </button>
